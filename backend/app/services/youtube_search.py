@@ -63,8 +63,8 @@ class YouTubeSearchService:
         try:
             search_params = {
                 "q": query,
-                "part": "snippet,statistics",
-                "maxResults": min(50, page_size * 2),  # Fetch more results to sort
+                "part": "snippet",  # Remove statistics from initial search
+                "maxResults": min(50, page_size * 2),
                 "type": "video",
                 "videoEmbeddable": "true",
                 "videoSyndicated": "true"
@@ -77,6 +77,8 @@ class YouTubeSearchService:
             
             # Get detailed video information
             video_ids = [item['id']['videoId'] for item in results.get('items', [])]
+            
+            # Separate request for video statistics
             videos_response = self.service.videos().list(
                 part="statistics,snippet",
                 id=','.join(video_ids)
@@ -93,16 +95,16 @@ class YouTubeSearchService:
                 video_id = item['id']['videoId']
                 if video_id in video_details:
                     # Combine search result with video details
-                    item.update(video_details[video_id])
-                    score = self.calculate_video_score(item, query)
-                    scored_results.append((score, item))
+                    full_details = video_details[video_id]
+                    score = self.calculate_video_score(full_details, query)
+                    scored_results.append((score, item, full_details))
             
             # Sort by score and take top results
             scored_results.sort(reverse=True, key=lambda x: x[0])
             top_results = scored_results[:page_size]
             
             search_results = []
-            for _, item in top_results:
+            for _, item, details in top_results:
                 try:
                     video_id = item['id']['videoId']
                     result = SearchResult(
@@ -110,15 +112,15 @@ class YouTubeSearchService:
                         title=item["snippet"]["title"],
                         description=item["snippet"]["description"],
                         url=f"https://youtube.com/watch?v={video_id}",
-                        thumbnail=item["snippet"]["thumbnails"]["medium"]["url"],
+                        thumbnail=item["snippet"]["thumbnails"]["high"]["url"],
                         type="video",
-                        source_name="YouTube",
+                        source_name=item["snippet"]["channelTitle"],
                         source_icon="https://www.youtube.com/favicon.ico",
                         additional_info={
                             "channel": item["snippet"]["channelTitle"],
                             "published_at": item["snippet"]["publishedAt"],
-                            "view_count": item.get("statistics", {}).get("viewCount"),
-                            "like_count": item.get("statistics", {}).get("likeCount")
+                            "view_count": details["statistics"].get("viewCount"),
+                            "like_count": details["statistics"].get("likeCount")
                         }
                     )
                     search_results.append(result)

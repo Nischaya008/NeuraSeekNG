@@ -3,7 +3,7 @@ const MAX_HISTORY_ITEMS = 10;
 
 class SearchService {
   constructor() {
-    this.baseUrl = 'https://neuraseekng-backend.up.railway.app/api';
+    this.baseUrl = 'https://neuraseekng-backend.up.railway.app';
   }
 
   // Search History Methods

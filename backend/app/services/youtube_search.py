@@ -17,11 +17,35 @@ class YouTubeSearchService:
         if query.lower() in item['snippet']['title'].lower():
             score += 5.0
             
-        # Channel authority
-        if 'statistics' in item['snippet']:
-            subscriber_count = int(item['snippet']['statistics'].get('subscriberCount', 0))
-            score += min(3.0, subscriber_count / 1000000)  # Up to 3 points for 1M+ subscribers
+        # Get channel details
+        try:
+            channel_id = item['snippet']['channelId']
+            channel_response = self.service.channels().list(
+                part="statistics,status,brandingSettings",
+                id=channel_id
+            ).execute()
             
+            if channel_response['items']:
+                channel = channel_response['items'][0]
+                
+                # Channel verification status
+                if channel['status'].get('isLinked', False):
+                    score += 3.0
+                    
+                # Subscriber count
+                subscriber_count = int(channel['statistics'].get('subscriberCount', 0))
+                score += min(4.0, subscriber_count / 1000000)  # Up to 4 points for 1M+ subscribers
+                
+                # Channel age and consistency
+                if 'brandingSettings' in channel:
+                    channel_title = channel['brandingSettings'].get('channel', {}).get('title', '').lower()
+                    # Check if channel name matches query terms (official channel)
+                    if any(term.lower() in channel_title for term in query.split()):
+                        score += 5.0
+                        
+        except Exception as e:
+            print(f"Error fetching channel details: {e}")
+        
         # Engagement metrics
         if 'statistics' in item:
             views = int(item['statistics'].get('viewCount', 0))
@@ -39,12 +63,11 @@ class YouTubeSearchService:
         try:
             search_params = {
                 "q": query,
-                "part": "snippet",
-                "maxResults": page_size,
+                "part": "snippet,statistics",
+                "maxResults": min(50, page_size * 2),  # Fetch more results to sort
                 "type": "video",
                 "videoEmbeddable": "true",
-                "videoSyndicated": "true",
-                "order": "relevance"
+                "videoSyndicated": "true"
             }
             
             if page_token:
@@ -52,13 +75,36 @@ class YouTubeSearchService:
 
             results = self.service.search().list(**search_params).execute()
             
-            search_results = []
+            # Get detailed video information
+            video_ids = [item['id']['videoId'] for item in results.get('items', [])]
+            videos_response = self.service.videos().list(
+                part="statistics,snippet",
+                id=','.join(video_ids)
+            ).execute()
+            
+            # Create a mapping of video details
+            video_details = {
+                item['id']: item for item in videos_response.get('items', [])
+            }
+            
+            # Calculate scores and sort results
+            scored_results = []
             for item in results.get("items", []):
+                video_id = item['id']['videoId']
+                if video_id in video_details:
+                    # Combine search result with video details
+                    item.update(video_details[video_id])
+                    score = self.calculate_video_score(item, query)
+                    scored_results.append((score, item))
+            
+            # Sort by score and take top results
+            scored_results.sort(reverse=True, key=lambda x: x[0])
+            top_results = scored_results[:page_size]
+            
+            search_results = []
+            for _, item in top_results:
                 try:
-                    video_id = item.get("id", {}).get("videoId")
-                    if not video_id:
-                        continue
-                        
+                    video_id = item['id']['videoId']
                     result = SearchResult(
                         id=video_id,
                         title=item["snippet"]["title"],
@@ -70,7 +116,9 @@ class YouTubeSearchService:
                         source_icon="https://www.youtube.com/favicon.ico",
                         additional_info={
                             "channel": item["snippet"]["channelTitle"],
-                            "published_at": item["snippet"]["publishedAt"]
+                            "published_at": item["snippet"]["publishedAt"],
+                            "view_count": item.get("statistics", {}).get("viewCount"),
+                            "like_count": item.get("statistics", {}).get("likeCount")
                         }
                     )
                     search_results.append(result)

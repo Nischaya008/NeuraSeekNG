@@ -12,50 +12,95 @@ class YouTubeSearchService:
 
     def calculate_video_score(self, item, query):
         score = 0.0
+        query_terms = set(term.lower() for term in query.split())
         
-        # Title relevance
-        if query.lower() in item['snippet']['title'].lower():
-            score += 5.0
-            
-        # Get channel details
         try:
+            # Title relevance (0-8 points)
+            title = item['snippet']['title'].lower()
+            title_matches = sum(1 for term in query_terms if term in title)
+            score += min(8.0, title_matches * 2.0)
+            
+            # Get channel details
             channel_id = item['snippet']['channelId']
             channel_response = self.service.channels().list(
-                part="statistics,status,brandingSettings",
+                part="statistics,status,brandingSettings,contentOwnerDetails",
                 id=channel_id
             ).execute()
             
             if channel_response['items']:
                 channel = channel_response['items'][0]
                 
-                # Channel verification status
+                # Official channel verification (10 points)
                 if channel['status'].get('isLinked', False):
-                    score += 3.0
+                    score += 10.0
                     
-                # Subscriber count
+                # Channel authority based on subscribers (0-15 points)
                 subscriber_count = int(channel['statistics'].get('subscriberCount', 0))
-                score += min(4.0, subscriber_count / 1000000)  # Up to 4 points for 1M+ subscribers
+                if subscriber_count > 10000000:  # 10M+
+                    score += 15.0
+                elif subscriber_count > 1000000:  # 1M+
+                    score += 12.0
+                elif subscriber_count > 100000:  # 100K+
+                    score += 8.0
+                elif subscriber_count > 10000:  # 10K+
+                    score += 4.0
                 
-                # Channel age and consistency
+                # Official/Verified brand match (0-20 points)
                 if 'brandingSettings' in channel:
                     channel_title = channel['brandingSettings'].get('channel', {}).get('title', '').lower()
-                    # Check if channel name matches query terms (official channel)
-                    if any(term.lower() in channel_title for term in query.split()):
+                    channel_keywords = channel['brandingSettings'].get('channel', {}).get('keywords', '').lower()
+                    
+                    # Check for exact brand match
+                    brand_terms = {'official', 'verified', channel_title}
+                    brand_matches = sum(1 for term in query_terms if any(term in brand for brand in brand_terms))
+                    score += min(20.0, brand_matches * 10.0)
+                    
+                    # Check for content ownership verification
+                    if 'contentOwnerDetails' in channel:
                         score += 5.0
-                        
-        except Exception as e:
-            print(f"Error fetching channel details: {e}")
-        
-        # Engagement metrics
-        if 'statistics' in item:
-            views = int(item['statistics'].get('viewCount', 0))
-            likes = int(item['statistics'].get('likeCount', 0))
-            
-            # Engagement ratio (likes/views)
-            if views > 0:
-                engagement_ratio = likes / views
-                score += min(2.0, engagement_ratio * 100)
                 
+            # Engagement metrics (0-12 points)
+            if 'statistics' in item:
+                views = int(item['statistics'].get('viewCount', 0))
+                likes = int(item['statistics'].get('likeCount', 0))
+                comments = int(item['statistics'].get('commentCount', 0))
+                
+                # View count score (0-6 points)
+                if views > 10000000:  # 10M+ views
+                    score += 6.0
+                elif views > 1000000:  # 1M+ views
+                    score += 4.0
+                elif views > 100000:  # 100K+ views
+                    score += 2.0
+                
+                # Engagement ratio (likes + comments / views) (0-6 points)
+                if views > 0:
+                    engagement_ratio = (likes + comments) / views
+                    score += min(6.0, engagement_ratio * 1000)
+            
+            # Video age bonus (0-5 points)
+            # Favor established videos that have stood the test of time
+            published_at = item['snippet'].get('publishedAt', '')
+            if published_at:
+                from datetime import datetime, timezone
+                published_date = datetime.strptime(published_at, '%Y-%m-%dT%H:%M:%SZ')
+                age_days = (datetime.now(timezone.utc) - published_date).days
+                
+                if age_days > 365:  # Older than 1 year
+                    score += 5.0
+                elif age_days > 180:  # Older than 6 months
+                    score += 4.0
+                elif age_days > 90:  # Older than 3 months
+                    score += 3.0
+                elif age_days > 30:  # Older than 1 month
+                    score += 2.0
+                elif age_days > 7:  # Older than 1 week
+                    score += 1.0
+                # Videos less than a week old get no age bonus
+                
+        except Exception as e:
+            print(f"Error calculating video score: {e}")
+        
         return score
 
     @cached_search

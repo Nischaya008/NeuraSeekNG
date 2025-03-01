@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.search import router
 from app.config import settings
+from app.api.search import router
 
-app = FastAPI()
+app = FastAPI(title="Neural Seek API")
 
 # Add CORS middleware
 app.add_middleware(

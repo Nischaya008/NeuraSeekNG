@@ -4,6 +4,7 @@ import { FiLoader } from 'react-icons/fi';
 import AISummary from './AISummary';
 import { FixedSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
+import { searchService } from '../services/searchService';
 
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center min-h-[200px]">

@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gradient-to-b from-retro-rose to-retro-terminal rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply from-retro-rose/80 to-retro-terminal/80;
+  }
+
+  body {
+    @apply m-0 min-h-screen bg-retro-background text-retro-paper;
+  }
+
+  #root {
+    @apply min-h-screen w-full;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-retro-background/80 backdrop-blur-lg border border-retro-paper/20;
+  }
+  
+  .search-container {
+    @apply container mx-auto px-4 py-8 relative z-10;
+  }
+}
+
+/* Add these utility classes */
+.bg-size-200 {
+  background-size: 200% 100%;
+}
+
+.hover\:bg-pos-100:hover {
+  background-position: 100% 0;
+}

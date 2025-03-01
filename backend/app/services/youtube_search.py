@@ -83,7 +83,7 @@ class YouTubeSearchService:
             published_at = item['snippet'].get('publishedAt', '')
             if published_at:
                 from datetime import datetime, timezone
-                published_date = datetime.strptime(published_at, '%Y-%m-%dT%H:%M:%SZ')
+                published_date = datetime.strptime(published_at, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
                 age_days = (datetime.now(timezone.utc) - published_date).days
                 
                 if age_days > 365:  # Older than 1 year

@@ -199,11 +199,13 @@ const ResultsGrid = ({ type, query }) => {
         params.append('page_token', nextPageToken);
       }
 
-      const response = await fetch(`/api/search?${params.toString()}`, {
+      const response = await fetch(`${searchService.baseUrl}/search?${params.toString()}`, {
+        method: 'GET',
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
-        }
+        },
+        mode: 'cors'
       });
       
       if (!response.ok) {

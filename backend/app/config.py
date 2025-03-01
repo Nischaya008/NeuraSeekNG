@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     REDDIT_CLIENT_ID: str
     REDDIT_CLIENT_SECRET: str
     REDDIT_USER_AGENT: str = "NeuralSeekNG/1.0"
-    CORS_ORIGINS: str = "http://localhost:5173,https://neuraseekng.vercel.app,https://neuraseekng-backend.up.railway.app"
+    CORS_ORIGINS: str = "http://localhost:5173,https://neuraseekng.vercel.app,https://neuraseekng-backend.up.railway.app,*"
     SERPAPI_KEY: str
     HUGGINGFACE_API_KEY: str
 

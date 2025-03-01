@@ -43,7 +43,15 @@ class SearchService {
     
     try {
       const response = await fetch(
-        `${this.baseUrl}/suggestions?q=${encodeURIComponent(query)}`
+        `${this.baseUrl}/suggestions?q=${encodeURIComponent(query)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          mode: 'cors',
+        }
       );
       const data = await response.json();
       return data || [];

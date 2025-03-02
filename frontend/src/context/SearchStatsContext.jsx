@@ -1,24 +1,37 @@
 import { createContext, useContext } from 'react';
 
-const STATS_KEY = 'neura_seek_stats';
+const getUniqueUserId = () => {
+  let userId = localStorage.getItem('user_id');
+  if (!userId) {
+    userId = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('user_id', userId);
+  }
+  return userId;
+};
+
+const STATS_KEY = (userId) => `neura_seek_stats_${userId}`;
 const SearchStatsContext = createContext();
 
 export function SearchStatsProvider({ children }) {
+  const userId = getUniqueUserId();
+
   const incrementSearches = () => {
-    const savedStats = localStorage.getItem(STATS_KEY);
+    const savedStats = localStorage.getItem(STATS_KEY(userId));
     const currentStats = savedStats ? JSON.parse(savedStats) : {
       timeSpent: 0,
       searchesMade: 0,
-      lastVisit: new Date().toISOString()
+      lastVisit: new Date().toISOString(),
+      lastActiveTimestamp: new Date().getTime()
     };
 
     const newStats = {
       ...currentStats,
       searchesMade: (currentStats.searchesMade || 0) + 1,
-      lastVisit: new Date().toISOString()
+      lastVisit: new Date().toISOString(),
+      lastActiveTimestamp: new Date().getTime()
     };
 
-    localStorage.setItem(STATS_KEY, JSON.stringify(newStats));
+    localStorage.setItem(STATS_KEY(userId), JSON.stringify(newStats));
     
     // Dispatch a custom event to notify StatsWidget
     window.dispatchEvent(new CustomEvent('statsUpdate', { detail: newStats }));

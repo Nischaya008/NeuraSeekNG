@@ -39,10 +39,8 @@ const StatsWidget = () => {
       }
     };
 
-    // Start the timer
     timer = setInterval(updateTime, 1000);
 
-    // Handle visibility change
     const handleVisibilityChange = () => {
       if (document.hidden) {
         isActive = false;
@@ -53,53 +51,35 @@ const StatsWidget = () => {
       }
     };
 
-    // Handle before unload
-    const handleBeforeUnload = () => {
-      localStorage.setItem(STATS_KEY(userId), JSON.stringify(stats));
-    };
-
-    // Add event listeners
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Cleanup
     return () => {
       clearInterval(timer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      handleBeforeUnload();
     };
-  }, [userId, stats]);
-
-  // Listen for search count updates and sync with localStorage
-  useEffect(() => {
-    const handleStatsUpdate = (event) => {
-      const newStats = event.detail;
-      setStats(prev => ({
-        ...prev,
-        searchesMade: newStats.searchesMade
-      }));
-    };
-
-    // Initial sync with localStorage
-    const savedStats = localStorage.getItem(STATS_KEY(userId));
-    if (savedStats) {
-      const parsedStats = JSON.parse(savedStats);
-      setStats(prev => ({
-        ...prev,
-        searchesMade: parsedStats.searchesMade || 0,
-        timeSpent: parsedStats.timeSpent || 0
-      }));
-    }
-
-    window.addEventListener('statsUpdate', handleStatsUpdate);
-    return () => window.removeEventListener('statsUpdate', handleStatsUpdate);
-  }, [userId]);
+  }, []);
 
   // Save to localStorage whenever stats change
   useEffect(() => {
     localStorage.setItem(STATS_KEY(userId), JSON.stringify(stats));
   }, [stats, userId]);
+
+  // Listen for search count updates
+  useEffect(() => {
+    const handleStatsUpdate = (event) => {
+      const savedStats = localStorage.getItem(STATS_KEY(userId));
+      if (savedStats) {
+        const parsedStats = JSON.parse(savedStats);
+        setStats(prev => ({
+          ...prev,
+          searchesMade: parsedStats.searchesMade || 0
+        }));
+      }
+    };
+
+    window.addEventListener('statsUpdate', handleStatsUpdate);
+    return () => window.removeEventListener('statsUpdate', handleStatsUpdate);
+  }, [userId]);
 
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);

@@ -2,9 +2,6 @@
 
 # NeuraSeekNG 🚀  
 **An AI-powered search engine integrating Google, YouTube, Reddit, and Google Scholar with real-time AI insights, sentiment analysis, and intelligent summaries.**
-
-![GitHub Repo stars](https://img.shields.io/github/stars/Nischaya008/NeuraSeekNG?style=social)
-![GitHub forks](https://img.shields.io/github/forks/Nischaya008/NeuraSeekNG?style=social)
 ![License](https://img.shields.io/github/license/Nischaya008/NeuraSeekNG)
 
 ---
@@ -31,11 +28,11 @@
 ### **System Overview**
 ```mermaid
 graph TD;
-  User-->Frontend;
-  Frontend-->|REST API|Backend;
-  Backend-->|Search|Google/YouTube/Reddit/Scholar;
-  Backend-->|AI Processing|HuggingFace Models;
-  Backend-->|Caching|Redis;
+  User --> Frontend;
+  Frontend --> |REST API| Backend;
+  Backend --> |Search| "Google / YouTube / Reddit / Scholar";
+  Backend --> |AI Processing| "HuggingFace Models";
+  Backend --> |Caching| Redis;
 ```
 
 ---

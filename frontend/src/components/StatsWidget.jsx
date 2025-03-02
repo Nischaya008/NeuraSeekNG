@@ -25,51 +25,16 @@ const StatsWidget = () => {
     };
   });
 
-  // Update localStorage whenever stats change
-  useEffect(() => {
-    localStorage.setItem(STATS_KEY(userId), JSON.stringify(stats));
-  }, [stats, userId]);
-
-  // Listen for search count updates
-  useEffect(() => {
-    const handleStatsUpdate = (event) => {
-      const newStats = event.detail;
-      setStats(prevStats => ({
-        ...prevStats,
-        searchesMade: newStats.searchesMade,
-        lastVisit: newStats.lastVisit
-      }));
-    };
-
-    // Initial sync with localStorage
-    const savedStats = localStorage.getItem(STATS_KEY(userId));
-    if (savedStats) {
-      const parsedStats = JSON.parse(savedStats);
-      setStats(prevStats => ({
-        ...prevStats,
-        searchesMade: parsedStats.searchesMade || 0
-      }));
-    }
-
-    window.addEventListener('statsUpdate', handleStatsUpdate);
-    return () => window.removeEventListener('statsUpdate', handleStatsUpdate);
-  }, [userId]);
-
   // Handle time tracking
   useEffect(() => {
     let timer;
-    let startTime = Date.now();
     let isActive = true;
 
     const updateTime = () => {
       if (isActive) {
-        const currentTime = Date.now();
-        const timeDiff = Math.floor((currentTime - startTime) / 1000);
-        startTime = currentTime;
-
         setStats(prev => ({
           ...prev,
-          timeSpent: prev.timeSpent + timeDiff
+          timeSpent: prev.timeSpent + 1
         }));
       }
     };
@@ -82,17 +47,14 @@ const StatsWidget = () => {
       if (document.hidden) {
         isActive = false;
         clearInterval(timer);
-        updateTime(); // Update one last time before becoming hidden
       } else {
         isActive = true;
-        startTime = Date.now();
         timer = setInterval(updateTime, 1000);
       }
     };
 
     // Handle before unload
     const handleBeforeUnload = () => {
-      updateTime(); // Update one last time before unloading
       localStorage.setItem(STATS_KEY(userId), JSON.stringify(stats));
     };
 
@@ -108,6 +70,36 @@ const StatsWidget = () => {
       handleBeforeUnload();
     };
   }, [userId, stats]);
+
+  // Listen for search count updates and sync with localStorage
+  useEffect(() => {
+    const handleStatsUpdate = (event) => {
+      const newStats = event.detail;
+      setStats(prev => ({
+        ...prev,
+        searchesMade: newStats.searchesMade
+      }));
+    };
+
+    // Initial sync with localStorage
+    const savedStats = localStorage.getItem(STATS_KEY(userId));
+    if (savedStats) {
+      const parsedStats = JSON.parse(savedStats);
+      setStats(prev => ({
+        ...prev,
+        searchesMade: parsedStats.searchesMade || 0,
+        timeSpent: parsedStats.timeSpent || 0
+      }));
+    }
+
+    window.addEventListener('statsUpdate', handleStatsUpdate);
+    return () => window.removeEventListener('statsUpdate', handleStatsUpdate);
+  }, [userId]);
+
+  // Save to localStorage whenever stats change
+  useEffect(() => {
+    localStorage.setItem(STATS_KEY(userId), JSON.stringify(stats));
+  }, [stats, userId]);
 
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);

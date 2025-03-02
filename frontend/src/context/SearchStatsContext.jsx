@@ -20,15 +20,13 @@ export function SearchStatsProvider({ children }) {
     const currentStats = savedStats ? JSON.parse(savedStats) : {
       timeSpent: 0,
       searchesMade: 0,
-      lastVisit: new Date().toISOString(),
-      lastActiveTimestamp: new Date().getTime()
+      lastVisit: new Date().toISOString()
     };
 
     const newStats = {
       ...currentStats,
-      searchesMade: (currentStats.searchesMade || 0) + 1,
-      lastVisit: new Date().toISOString(),
-      lastActiveTimestamp: new Date().getTime()
+      searchesMade: currentStats.searchesMade + 1,
+      lastVisit: new Date().toISOString()
     };
 
     localStorage.setItem(STATS_KEY(userId), JSON.stringify(newStats));

@@ -29,6 +29,20 @@ const StatsWidget = () => {
     localStorage.setItem(STATS_KEY(userId), JSON.stringify(stats));
   }, [stats, userId]);
 
+  // Listen for search count updates
+  useEffect(() => {
+    const handleStatsUpdate = (event) => {
+      const newStats = event.detail;
+      setStats(prev => ({
+        ...prev,
+        searchesMade: newStats.searchesMade
+      }));
+    };
+
+    window.addEventListener('statsUpdate', handleStatsUpdate);
+    return () => window.removeEventListener('statsUpdate', handleStatsUpdate);
+  }, []);
+
   // Handle time tracking
   useEffect(() => {
     let timer;

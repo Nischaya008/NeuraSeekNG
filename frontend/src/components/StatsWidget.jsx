@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiClock, FiSearch } from 'react-icons/fi';
 import { motion } from 'framer-motion';
+import { useSearchStats } from '../context/SearchStatsContext';
 
 const getUniqueUserId = () => {
   let userId = localStorage.getItem('user_id');
@@ -33,15 +34,26 @@ const StatsWidget = () => {
   useEffect(() => {
     const handleStatsUpdate = (event) => {
       const newStats = event.detail;
-      setStats(prev => ({
-        ...prev,
-        searchesMade: newStats.searchesMade
+      setStats(prevStats => ({
+        ...prevStats,
+        searchesMade: newStats.searchesMade,
+        lastVisit: newStats.lastVisit
       }));
     };
 
+    // Initial sync with localStorage
+    const savedStats = localStorage.getItem(STATS_KEY(userId));
+    if (savedStats) {
+      const parsedStats = JSON.parse(savedStats);
+      setStats(prevStats => ({
+        ...prevStats,
+        searchesMade: parsedStats.searchesMade || 0
+      }));
+    }
+
     window.addEventListener('statsUpdate', handleStatsUpdate);
     return () => window.removeEventListener('statsUpdate', handleStatsUpdate);
-  }, []);
+  }, [userId]);
 
   // Handle time tracking
   useEffect(() => {
@@ -95,7 +107,7 @@ const StatsWidget = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       handleBeforeUnload();
     };
-  }, [userId]);
+  }, [userId, stats]);
 
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);

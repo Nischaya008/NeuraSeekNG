@@ -20,8 +20,7 @@ const StatsWidget = () => {
     return savedStats ? JSON.parse(savedStats) : {
       timeSpent: 0,
       searchesMade: 0,
-      lastVisit: new Date().toISOString(),
-      lastActiveTimestamp: new Date().getTime()
+      lastVisit: new Date().toISOString()
     };
   });
 
@@ -30,78 +29,45 @@ const StatsWidget = () => {
     localStorage.setItem(STATS_KEY(userId), JSON.stringify(stats));
   }, [stats, userId]);
 
-  // Handle time tracking with persistence
+  // Handle time tracking
   useEffect(() => {
     let timer;
-    const currentTime = new Date().getTime();
-    const lastActiveTime = stats.lastActiveTimestamp;
+    let startTime = Date.now();
+    let isActive = true;
 
-    // Calculate time difference since last active session
-    if (lastActiveTime) {
-      const timeDiff = Math.floor((currentTime - lastActiveTime) / 1000);
-      if (timeDiff > 0) {
+    const updateTime = () => {
+      if (isActive) {
+        const currentTime = Date.now();
+        const timeDiff = Math.floor((currentTime - startTime) / 1000);
+        startTime = currentTime;
+
         setStats(prev => ({
           ...prev,
-          timeSpent: prev.timeSpent + timeDiff,
-          lastActiveTimestamp: currentTime
+          timeSpent: prev.timeSpent + timeDiff
         }));
       }
-    }
+    };
 
-    // Start the timer for active session
-    timer = setInterval(() => {
-      setStats(prev => ({
-        ...prev,
-        timeSpent: prev.timeSpent + 1,
-        lastActiveTimestamp: new Date().getTime()
-      }));
-    }, 1000);
+    // Start the timer
+    timer = setInterval(updateTime, 1000);
 
     // Handle visibility change
     const handleVisibilityChange = () => {
       if (document.hidden) {
+        isActive = false;
         clearInterval(timer);
-        // Save the current timestamp when hiding
-        const hiddenTime = new Date().getTime();
-        setStats(prev => ({
-          ...prev,
-          lastActiveTimestamp: hiddenTime
-        }));
+        updateTime(); // Update one last time before becoming hidden
       } else {
-        // Calculate time difference when becoming visible
-        const visibleTime = new Date().getTime();
-        const lastTime = stats.lastActiveTimestamp;
-        const timeDiff = Math.floor((visibleTime - lastTime) / 1000);
-        
-        setStats(prev => ({
-          ...prev,
-          timeSpent: prev.timeSpent + timeDiff,
-          lastActiveTimestamp: visibleTime
-        }));
-
-        // Restart the timer
-        timer = setInterval(() => {
-          setStats(prev => ({
-            ...prev,
-            timeSpent: prev.timeSpent + 1,
-            lastActiveTimestamp: new Date().getTime()
-          }));
-        }, 1000);
+        isActive = true;
+        startTime = Date.now();
+        timer = setInterval(updateTime, 1000);
       }
     };
 
     // Handle before unload
     const handleBeforeUnload = () => {
-      const unloadTime = new Date().getTime();
-      const timeDiff = Math.floor((unloadTime - stats.lastActiveTimestamp) / 1000);
-      
-      const finalStats = {
-        ...stats,
-        timeSpent: stats.timeSpent + timeDiff,
-        lastActiveTimestamp: unloadTime
-      };
-      
-      localStorage.setItem(STATS_KEY(userId), JSON.stringify(finalStats));
+      updateTime(); // Update one last time before unloading
+      localStorage.setItem(STATS_KEY(userId), JSON.stringify(stats));
     };
 
     // Add event listeners
@@ -115,7 +81,7 @@ const StatsWidget = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       handleBeforeUnload();
     };
-  }, [userId, stats.lastActiveTimestamp]);
+  }, [userId]);
 
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);

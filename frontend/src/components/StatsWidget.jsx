@@ -32,18 +32,24 @@ const StatsWidget = () => {
 
   // Handle time tracking with persistence
   useEffect(() => {
-    // Calculate time difference since last active session
+    let timer;
     const currentTime = new Date().getTime();
     const lastActiveTime = stats.lastActiveTimestamp;
-    
-    // Update last active timestamp
-    setStats(prev => ({
-      ...prev,
-      lastActiveTimestamp: currentTime
-    }));
 
-    // Start the timer
-    const timer = setInterval(() => {
+    // Calculate time difference since last active session
+    if (lastActiveTime) {
+      const timeDiff = Math.floor((currentTime - lastActiveTime) / 1000);
+      if (timeDiff > 0) {
+        setStats(prev => ({
+          ...prev,
+          timeSpent: prev.timeSpent + timeDiff,
+          lastActiveTimestamp: currentTime
+        }));
+      }
+    }
+
+    // Start the timer for active session
+    timer = setInterval(() => {
       setStats(prev => ({
         ...prev,
         timeSpent: prev.timeSpent + 1,
@@ -54,24 +60,48 @@ const StatsWidget = () => {
     // Handle visibility change
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // Page is being hidden (user switched tabs or minimized)
         clearInterval(timer);
-      } else {
-        // Page is visible again, calculate time difference
-        const newCurrentTime = new Date().getTime();
+        // Save the current timestamp when hiding
+        const hiddenTime = new Date().getTime();
         setStats(prev => ({
           ...prev,
-          lastActiveTimestamp: newCurrentTime
+          lastActiveTimestamp: hiddenTime
         }));
+      } else {
+        // Calculate time difference when becoming visible
+        const visibleTime = new Date().getTime();
+        const lastTime = stats.lastActiveTimestamp;
+        const timeDiff = Math.floor((visibleTime - lastTime) / 1000);
+        
+        setStats(prev => ({
+          ...prev,
+          timeSpent: prev.timeSpent + timeDiff,
+          lastActiveTimestamp: visibleTime
+        }));
+
+        // Restart the timer
+        timer = setInterval(() => {
+          setStats(prev => ({
+            ...prev,
+            timeSpent: prev.timeSpent + 1,
+            lastActiveTimestamp: new Date().getTime()
+          }));
+        }, 1000);
       }
     };
 
     // Handle before unload
     const handleBeforeUnload = () => {
-      localStorage.setItem(STATS_KEY(userId), JSON.stringify({
+      const unloadTime = new Date().getTime();
+      const timeDiff = Math.floor((unloadTime - stats.lastActiveTimestamp) / 1000);
+      
+      const finalStats = {
         ...stats,
-        lastActiveTimestamp: new Date().getTime()
-      }));
+        timeSpent: stats.timeSpent + timeDiff,
+        lastActiveTimestamp: unloadTime
+      };
+      
+      localStorage.setItem(STATS_KEY(userId), JSON.stringify(finalStats));
     };
 
     // Add event listeners
@@ -85,7 +115,7 @@ const StatsWidget = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       handleBeforeUnload();
     };
-  }, [userId, stats]);
+  }, [userId, stats.lastActiveTimestamp]);
 
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);

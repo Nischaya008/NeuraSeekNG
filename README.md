@@ -122,11 +122,6 @@ We welcome contributions! If you'd like to enhance NeuraSeekNG, feel free to:
 
 ---
 
-## 📬 Contact
-For queries, feel free to reach out via GitHub issues or email at `your-email@example.com`.
-
----
-
 ## 🎯 Future Enhancements
 - 🔎 Personalized Search Ranking using Reinforcement Learning
 - 🗂️ Search History & User Preferences
@@ -134,4 +129,10 @@ For queries, feel free to reach out via GitHub issues or email at `your-email@ex
 
 ---
 
-Give a ⭐ if you like this project! Happy searching! 🚀
+## 📞 Contact
+For any inquiries or feedback, reach out via:
+- 📧 Email: nischayagarg008@gmail.com
+- 🐦 Twitter: [@Nischaya008](https://x.com/Nischaya008)
+- 💼 LinkedIn: [Nischaya Garg](https://www.linkedin.com/in/nischaya008/)
+
+Stay Innovated, Keep Coding, Think BIG! 🚀

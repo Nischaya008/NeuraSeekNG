@@ -30,8 +30,8 @@
 graph TD;
   User --> Frontend;
   Frontend --> |REST API| Backend;
-  Backend --> |Search| "Google / YouTube / Reddit / Scholar";
-  Backend --> |AI Processing| "HuggingFace Models";
+  Backend --> |Search| Google/YouTube/Reddit/Scholar;
+  Backend --> |AI Processing| HuggingFace_Models;
   Backend --> |Caching| Redis;
 ```
 
